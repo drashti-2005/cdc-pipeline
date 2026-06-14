@@ -1,0 +1,21 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "title": "CDC Pipeline Overview",
+  "uid": "cdc-pipeline-overview",
+  "version": 1,
+  "panels": [
+    {
+      "title": "Pipeline Health",
+      "type": "text",
+      "gridPos": {"h": 4, "w": 24, "x": 0, "y": 0},
+      "options": {
+        "content": "# CDC Pipeline Monitoring\n\nDashboard will be populated in Phase 16 with real pipeline metrics.",
+        "mode": "markdown"
+      }
+    }
+  ],
+  "schemaVersion": 39,
+  "timezone": "browser"
+}

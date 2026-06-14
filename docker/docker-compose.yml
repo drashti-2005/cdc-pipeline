@@ -1,0 +1,287 @@
+# ============================================================
+# CDC Pipeline - Docker Compose Configuration
+# ============================================================
+# This file defines ALL infrastructure services for the CDC pipeline.
+# Start with: docker compose -f docker/docker-compose.yml --env-file .env up -d
+# ============================================================
+
+services:
+
+  # ============================================================
+  # SOURCE LAYER - The database we capture changes FROM
+  # ============================================================
+  postgres-source:
+    image: postgres:16-alpine
+    container_name: postgres-source
+    environment:
+      # Database credentials - read from .env file
+      POSTGRES_DB: ${SOURCE_PG_DB}
+      POSTGRES_USER: ${SOURCE_PG_USER}
+      POSTGRES_PASSWORD: ${SOURCE_PG_PASSWORD}
+    ports:
+      # host_port:container_port
+      # Access from your machine at localhost:5432
+      - "${SOURCE_PG_PORT}:5432"
+    volumes:
+      # Named volume for data persistence (survives container restarts)
+      - postgres_source_data:/var/lib/postgresql/data
+    # CRITICAL: These commands enable logical replication (CDC requirement)
+    # Without these, PostgreSQL won't expose WAL changes for our pipeline
+    command:
+      - "postgres"
+      - "-c" 
+      - "wal_level=logical"              # Enable logical decoding of WAL
+      - "-c"
+      - "max_replication_slots=4"        # Max number of replication slots
+      - "-c"
+      - "max_wal_senders=4"              # Max number of WAL sender processes
+      - "-c"
+      - "log_statement=all"              # Log all SQL (useful for debugging)
+    healthcheck:
+      # Docker runs this command to check if PostgreSQL is ready
+      test: ["CMD-SHELL", "pg_isready -U ${SOURCE_PG_USER} -d ${SOURCE_PG_DB}"]
+      interval: 5s        # Check every 5 seconds
+      timeout: 5s         # Wait max 5 seconds for response
+      retries: 5          # Mark unhealthy after 5 failed attempts
+      start_period: 10s   # Give PostgreSQL 10s to start before checking
+    networks:
+      - cdc-network
+    restart: unless-stopped
+
+  # ============================================================
+  # TARGET LAYER - The database we replicate changes TO
+  # ============================================================
+  postgres-target:
+    image: postgres:16-alpine
+    container_name: postgres-target
+    environment:
+      POSTGRES_DB: ${TARGET_PG_DB}
+      POSTGRES_USER: ${TARGET_PG_USER}
+      POSTGRES_PASSWORD: ${TARGET_PG_PASSWORD}
+    ports:
+      # Different host port (5433) to avoid conflict with source (5432)
+      - "${TARGET_PG_PORT}:5432"
+    volumes:
+      - postgres_target_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${TARGET_PG_USER} -d ${TARGET_PG_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - cdc-network
+    restart: unless-stopped
+
+  # ============================================================
+  # STREAMING LAYER - Kafka + Zookeeper
+  # ============================================================
+
+  # Zookeeper: Kafka's coordination service
+  # It manages broker metadata, leader election, and configuration.
+  # Think of it as Kafka's "brain" that keeps the cluster organized.
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.7.1
+    container_name: zookeeper
+    environment:
+      # Port Zookeeper listens on for client connections
+      ZOOKEEPER_CLIENT_PORT: 2181
+      # How often Zookeeper sends heartbeats (milliseconds)
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+      - zookeeper_log:/var/lib/zookeeper/log
+    healthcheck:
+      # Check if Zookeeper is accepting connections
+      test: ["CMD-SHELL", "echo ruok | nc localhost 2181 | grep imok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - cdc-network
+    restart: unless-stopped
+
+  # Kafka: The event streaming platform (heart of our pipeline)
+  # All CDC events flow through Kafka topics.
+  kafka:
+    image: confluentinc/cp-kafka:7.7.1
+    container_name: kafka
+    depends_on:
+      zookeeper:
+        # Don't start Kafka until Zookeeper is confirmed healthy
+        condition: service_healthy
+    environment:
+      # Unique broker ID (would be different for each broker in a multi-broker cluster)
+      KAFKA_BROKER_ID: 1
+      # Tell Kafka where Zookeeper is
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      
+      # LISTENERS: What interfaces Kafka binds to INSIDE the container
+      # INTERNAL = for container-to-container communication (other Docker services)
+      # EXTERNAL = for host machine access (your Python scripts, tools)
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:29092,EXTERNAL://0.0.0.0:9092
+      
+      # ADVERTISED_LISTENERS: What Kafka tells clients to connect to
+      # When a container connects, it's told to use "kafka:29092"
+      # When your host machine connects, it's told to use "localhost:9092"
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
+      
+      # Map listener names to security protocols (PLAINTEXT = no encryption)
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      
+      # Which listener other brokers use to communicate (inter-broker)
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      
+      # Replication factor for internal topics (1 since we have 1 broker)
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      
+      # Auto-create topics when a producer first writes to them
+      # In production, you'd set this to false and create topics explicitly
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      
+      # How long to retain messages (7 days = 604800000 ms)
+      KAFKA_LOG_RETENTION_MS: 604800000
+      
+      # Maximum message size (10 MB - generous for CDC events)
+      KAFKA_MESSAGE_MAX_BYTES: 10485760
+    ports:
+      - "9092:9092"     # External access from host
+      - "29092:29092"   # Internal access from other containers
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    healthcheck:
+      # Verify Kafka broker is ready by listing topics
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s   # Kafka takes longer to start
+    networks:
+      - cdc-network
+    restart: unless-stopped
+
+  # ============================================================
+  # STORAGE LAYER - MinIO (S3-compatible object storage)
+  # ============================================================
+  
+  # MinIO: Our "data lake" for archiving raw CDC events (Bronze layer)
+  # It's like having AWS S3 running on your machine.
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    environment:
+      # Root credentials for MinIO admin access
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    ports:
+      - "9000:9000"    # API port (S3-compatible endpoint)
+      - "9001:9001"    # Console port (Web UI)
+    volumes:
+      - minio_data:/data
+    # Start MinIO server with console on port 9001
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - cdc-network
+    restart: unless-stopped
+
+  # ============================================================
+  # MONITORING LAYER - Prometheus + Grafana
+  # ============================================================
+
+  # Prometheus: Collects metrics from all our services
+  # It "scrapes" (pulls) metrics from endpoints every few seconds
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: prometheus
+    ports:
+      - "${PROMETHEUS_PORT}:9090"
+    volumes:
+      # Mount our Prometheus config file
+      - ../monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=7d'    # Keep metrics for 7 days
+      - '--web.enable-lifecycle'               # Enable reload via HTTP
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - cdc-network
+    restart: unless-stopped
+
+  # Grafana: Visualizes metrics from Prometheus as beautiful dashboards
+  grafana:
+    image: grafana/grafana:11.3.0
+    container_name: grafana
+    environment:
+      # Admin credentials
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+      # Allow embedding in iframes (useful for integration)
+      GF_SECURITY_ALLOW_EMBEDDING: "true"
+      # Auto-provision Prometheus as a data source
+      GF_DATASOURCES_DEFAULT_NAME: Prometheus
+    ports:
+      - "${GRAFANA_PORT}:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      # Auto-provision dashboards and data sources
+      - ../monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ../monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - cdc-network
+    restart: unless-stopped
+
+# ============================================================
+# NETWORKS - How containers communicate
+# ============================================================
+networks:
+  cdc-network:
+    driver: bridge    # Default Docker network driver
+    name: cdc-network
+
+# ============================================================
+# VOLUMES - Persistent data storage
+# ============================================================
+# Named volumes ensure data survives container restarts.
+# Use `docker compose down -v` to destroy them (clean slate).
+volumes:
+  postgres_source_data:
+    name: cdc_postgres_source_data
+  postgres_target_data:
+    name: cdc_postgres_target_data
+  zookeeper_data:
+    name: cdc_zookeeper_data
+  zookeeper_log:
+    name: cdc_zookeeper_log
+  kafka_data:
+    name: cdc_kafka_data
+  minio_data:
+    name: cdc_minio_data
+  prometheus_data:
+    name: cdc_prometheus_data
+  grafana_data:
+    name: cdc_grafana_data

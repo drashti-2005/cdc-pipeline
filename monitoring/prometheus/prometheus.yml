@@ -1,0 +1,38 @@
+# ============================================================
+# Prometheus Configuration
+# ============================================================
+# Prometheus scrapes (pulls) metrics from targets at regular intervals.
+# Each target exposes a /metrics endpoint that Prometheus reads.
+# ============================================================
+
+global:
+  # How often Prometheus collects metrics from all targets
+  scrape_interval: 15s
+  # How often to evaluate alerting rules
+  evaluation_interval: 15s
+
+# ============================================================
+# Scrape Targets - Services that expose metrics
+# ============================================================
+scrape_configs:
+  # Prometheus monitors itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # CDC Pipeline metrics (will be exposed by our Python consumer in Phase 15)
+  - job_name: 'cdc-pipeline'
+    static_configs:
+      - targets: ['host.docker.internal:8000']
+    # Don't fail if target isn't up yet (we'll add it in Phase 15)
+    scrape_interval: 10s
+
+  # PostgreSQL Source metrics (optional - via pg_exporter in later phases)
+  # - job_name: 'postgres-source'
+  #   static_configs:
+  #     - targets: ['postgres-exporter-source:9187']
+
+  # Kafka metrics (optional - via JMX exporter in later phases)
+  # - job_name: 'kafka'
+  #   static_configs:
+  #     - targets: ['kafka:7071']
