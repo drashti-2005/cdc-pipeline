@@ -74,93 +74,55 @@ services:
     restart: unless-stopped
 
   # ============================================================
-  # STREAMING LAYER - Kafka + Zookeeper
+  # STREAMING LAYER - Kafka (KRaft mode, no Zookeeper needed)
   # ============================================================
 
-  # Zookeeper: Kafka's coordination service
-  # It manages broker metadata, leader election, and configuration.
-  # Think of it as Kafka's "brain" that keeps the cluster organized.
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.7.1
-    container_name: zookeeper
-    environment:
-      # Port Zookeeper listens on for client connections
-      ZOOKEEPER_CLIENT_PORT: 2181
-      # How often Zookeeper sends heartbeats (milliseconds)
-      ZOOKEEPER_TICK_TIME: 2000
-    ports:
-      - "2181:2181"
-    volumes:
-      - zookeeper_data:/var/lib/zookeeper/data
-      - zookeeper_log:/var/lib/zookeeper/log
-    healthcheck:
-      # Check if Zookeeper is accepting connections
-      test: ["CMD-SHELL", "echo ruok | nc localhost 2181 | grep imok"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-    networks:
-      - cdc-network
-    restart: unless-stopped
-
   # Kafka: The event streaming platform (heart of our pipeline)
+  # Using KRaft mode (Kafka Raft) - modern Kafka without Zookeeper dependency.
+  # KRaft replaced Zookeeper as Kafka's metadata manager since Kafka 3.3+.
   # All CDC events flow through Kafka topics.
   kafka:
-    image: confluentinc/cp-kafka:7.7.1
+    image: apache/kafka:3.8.0
     container_name: kafka
-    depends_on:
-      zookeeper:
-        # Don't start Kafka until Zookeeper is confirmed healthy
-        condition: service_healthy
     environment:
-      # Unique broker ID (would be different for each broker in a multi-broker cluster)
-      KAFKA_BROKER_ID: 1
-      # Tell Kafka where Zookeeper is
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      
-      # LISTENERS: What interfaces Kafka binds to INSIDE the container
-      # INTERNAL = for container-to-container communication (other Docker services)
-      # EXTERNAL = for host machine access (your Python scripts, tools)
-      KAFKA_LISTENERS: INTERNAL://0.0.0.0:29092,EXTERNAL://0.0.0.0:9092
-      
-      # ADVERTISED_LISTENERS: What Kafka tells clients to connect to
-      # When a container connects, it's told to use "kafka:29092"
-      # When your host machine connects, it's told to use "localhost:9092"
+      # --- KRaft Configuration (replaces Zookeeper) ---
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+
+      # --- Listener Configuration ---
+      # INTERNAL = container-to-container (other Docker services use this)
+      # EXTERNAL = host machine access (your Python scripts, tools)
+      # CONTROLLER = KRaft internal communication
+      KAFKA_LISTENERS: INTERNAL://:29092,EXTERNAL://:9092,CONTROLLER://:9093
       KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
-      
-      # Map listener names to security protocols (PLAINTEXT = no encryption)
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
-      
-      # Which listener other brokers use to communicate (inter-broker)
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
-      
-      # Replication factor for internal topics (1 since we have 1 broker)
+
+      # --- Topic Defaults ---
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      
-      # Auto-create topics when a producer first writes to them
-      # In production, you'd set this to false and create topics explicitly
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
-      
-      # How long to retain messages (7 days = 604800000 ms)
+
+      # --- Retention ---
       KAFKA_LOG_RETENTION_MS: 604800000
-      
-      # Maximum message size (10 MB - generous for CDC events)
       KAFKA_MESSAGE_MAX_BYTES: 10485760
+
+      # --- KRaft cluster ID ---
+      CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
     ports:
       - "9092:9092"     # External access from host
       - "29092:29092"   # Internal access from other containers
     volumes:
       - kafka_data:/var/lib/kafka/data
     healthcheck:
-      # Verify Kafka broker is ready by listing topics
-      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list"]
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
       interval: 10s
       timeout: 10s
       retries: 5
-      start_period: 30s   # Kafka takes longer to start
+      start_period: 30s
     networks:
       - cdc-network
     restart: unless-stopped
@@ -273,10 +235,6 @@ volumes:
     name: cdc_postgres_source_data
   postgres_target_data:
     name: cdc_postgres_target_data
-  zookeeper_data:
-    name: cdc_zookeeper_data
-  zookeeper_log:
-    name: cdc_zookeeper_log
   kafka_data:
     name: cdc_kafka_data
   minio_data:
