@@ -18,6 +18,9 @@ services:
       POSTGRES_DB: ${SOURCE_PG_DB}
       POSTGRES_USER: ${SOURCE_PG_USER}
       POSTGRES_PASSWORD: ${SOURCE_PG_PASSWORD}
+      # Use md5 for password auth (scram-sha-256 causes issues with some drivers)
+      POSTGRES_INITDB_ARGS: "--auth-host=md5"
+      POSTGRES_HOST_AUTH_METHOD: md5
     ports:
       # host_port:container_port
       # Access from your machine at localhost:5432
@@ -25,6 +28,8 @@ services:
     volumes:
       # Named volume for data persistence (survives container restarts)
       - postgres_source_data:/var/lib/postgresql/data
+      # Init script runs on FIRST startup only (when volume is fresh)
+      - ./postgres-source/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
     # CRITICAL: These commands enable logical replication (CDC requirement)
     # Without these, PostgreSQL won't expose WAL changes for our pipeline
     command:
@@ -58,6 +63,8 @@ services:
       POSTGRES_DB: ${TARGET_PG_DB}
       POSTGRES_USER: ${TARGET_PG_USER}
       POSTGRES_PASSWORD: ${TARGET_PG_PASSWORD}
+      POSTGRES_INITDB_ARGS: "--auth-host=md5"
+      POSTGRES_HOST_AUTH_METHOD: md5
     ports:
       # Different host port (5433) to avoid conflict with source (5432)
       - "${TARGET_PG_PORT}:5432"
