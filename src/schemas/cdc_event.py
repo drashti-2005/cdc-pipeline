@@ -183,6 +183,10 @@ class DLQEvent(BaseModel):
         default_factory=lambda: datetime.now(timezone.utc),
         description="When the event was sent to DLQ",
     )
+    failed_sink: Optional[str] = Field(
+        default=None,
+        description="Which sink failed (minio, postgres, or multiple)",
+    )
     consumer_id: Optional[str] = Field(
         default=None,
         description="Which consumer instance failed to process this",

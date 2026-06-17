@@ -70,6 +70,8 @@ services:
       - "${TARGET_PG_PORT}:5432"
     volumes:
       - postgres_target_data:/var/lib/postgresql/data
+      # Init script creates same schema as source (but no CDC config)
+      - ./postgres-target/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${TARGET_PG_USER} -d ${TARGET_PG_DB}"]
       interval: 5s
