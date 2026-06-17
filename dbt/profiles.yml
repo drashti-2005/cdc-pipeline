@@ -1,0 +1,31 @@
+# ============================================================
+# dbt Profiles - Database Connection Configuration
+# ============================================================
+# This file tells dbt HOW to connect to your data warehouse.
+# In production, use environment variables for credentials.
+# ============================================================
+
+cdc_pipeline:
+  target: dev  # Default target to use
+  outputs:
+    # Development environment - connects to target PostgreSQL
+    dev:
+      type: postgres
+      host: "{{ env_var('TARGET_PG_HOST', 'localhost') }}"
+      port: "{{ env_var('TARGET_PG_PORT', '5435') | int }}"
+      user: "{{ env_var('TARGET_PG_USER', 'target_user') }}"
+      password: "{{ env_var('TARGET_PG_PASSWORD', 'target_password') }}"
+      dbname: "{{ env_var('TARGET_PG_DB', 'target_db') }}"
+      schema: public  # Default schema for models
+      threads: 4      # Parallel model execution
+      
+    # Production environment (same for now, separate in real setup)
+    prod:
+      type: postgres
+      host: "{{ env_var('TARGET_PG_HOST', 'localhost') }}"
+      port: "{{ env_var('TARGET_PG_PORT', '5435') | int }}"
+      user: "{{ env_var('TARGET_PG_USER', 'target_user') }}"
+      password: "{{ env_var('TARGET_PG_PASSWORD', 'target_password') }}"
+      dbname: "{{ env_var('TARGET_PG_DB', 'target_db') }}"
+      schema: public
+      threads: 4

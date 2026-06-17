@@ -1,0 +1,125 @@
+# ============================================================
+# Source Definitions - Bronze/Raw Tables
+# ============================================================
+# This file defines our SOURCE tables (the raw CDC-replicated data
+# in the public schema of target PostgreSQL).
+#
+# WHY DEFINE SOURCES?
+# 1. Documentation: Clear lineage from source to mart
+# 2. Freshness checks: dbt can alert if data is stale
+# 3. Testing: Apply tests at the source level
+# 4. Referencing: Use {{ source('cdc', 'customers') }} in models
+# ============================================================
+
+version: 2
+
+sources:
+  - name: cdc
+    description: "CDC-replicated tables from source PostgreSQL"
+    database: target_db
+    schema: public
+    
+    # Freshness configuration - alert if data is stale
+    freshness:
+      warn_after: {count: 1, period: hour}
+      error_after: {count: 6, period: hour}
+    loaded_at_field: updated_at
+    
+    tables:
+      - name: customers
+        description: "Customer records replicated via CDC"
+        columns:
+          - name: id
+            description: "Primary key"
+            tests:
+              - unique
+              - not_null
+          - name: email
+            description: "Customer email address"
+            tests:
+              - unique
+              - not_null
+          - name: first_name
+            description: "Customer first name"
+          - name: last_name
+            description: "Customer last name"
+          - name: phone
+            description: "Customer phone number"
+          - name: created_at
+            description: "When customer was created"
+          - name: updated_at
+            description: "When customer was last updated"
+
+      - name: products
+        description: "Product catalog replicated via CDC"
+        columns:
+          - name: id
+            description: "Primary key"
+            tests:
+              - unique
+              - not_null
+          - name: name
+            description: "Product name"
+            tests:
+              - not_null
+          - name: category
+            description: "Product category"
+          - name: price
+            description: "Product price"
+            tests:
+              - not_null
+          - name: stock_qty
+            description: "Current stock quantity"
+          - name: description
+            description: "Product description"
+
+      - name: orders
+        description: "Customer orders replicated via CDC"
+        columns:
+          - name: id
+            description: "Primary key"
+            tests:
+              - unique
+              - not_null
+          - name: customer_id
+            description: "Foreign key to customers"
+            tests:
+              - not_null
+          - name: status
+            description: "Order status (pending, confirmed, shipped, delivered, cancelled)"
+            tests:
+              - accepted_values:
+                  values: ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled']
+          - name: total_amount
+            description: "Total order value"
+          - name: shipping_address
+            description: "Delivery address"
+          - name: created_at
+            description: "When order was placed"
+          - name: updated_at
+            description: "When order was last updated"
+
+      - name: order_items
+        description: "Line items within orders replicated via CDC"
+        columns:
+          - name: id
+            description: "Primary key"
+            tests:
+              - unique
+              - not_null
+          - name: order_id
+            description: "Foreign key to orders"
+            tests:
+              - not_null
+          - name: product_id
+            description: "Foreign key to products"
+            tests:
+              - not_null
+          - name: quantity
+            description: "Quantity ordered"
+            tests:
+              - not_null
+          - name: unit_price
+            description: "Price per unit at time of order"
+            tests:
+              - not_null

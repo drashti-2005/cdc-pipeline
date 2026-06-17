@@ -1,0 +1,66 @@
+# ============================================================
+# dbt Project Configuration
+# ============================================================
+# dbt (data build tool) transforms raw data into analytics-ready tables.
+#
+# MEDALLION ARCHITECTURE:
+# Bronze (MinIO) → Silver (cleaned) → Gold (aggregated)
+#
+# In our CDC pipeline:
+# - Bronze: Raw CDC events archived in MinIO (JSON Lines)
+# - Silver: Cleaned, deduplicated current state in target PostgreSQL
+# - Gold: Aggregated business metrics (daily revenue, customer stats)
+# ============================================================
+
+name: 'cdc_pipeline'
+version: '1.0.0'
+config-version: 2
+
+# This tells dbt which profile to use for database connection
+profile: 'cdc_pipeline'
+
+# Where to look for models
+model-paths: ["models"]
+
+# Where to look for seed data (static CSV files)
+seed-paths: ["seeds"]
+
+# Where to look for tests
+test-paths: ["tests"]
+
+# Where to look for macros (reusable SQL snippets)
+macro-paths: ["macros"]
+
+# Where to store compiled SQL and run artifacts
+target-path: "target"
+
+# How to clean compiled files
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+# ============================================================
+# Model Configurations by Folder
+# ============================================================
+models:
+  cdc_pipeline:
+    # Staging models (Silver layer): cleaned source data
+    staging:
+      +schema: silver
+      +materialized: view
+      +tags: ['silver', 'staging']
+    
+    # Mart models (Gold layer): business aggregations
+    marts:
+      +schema: gold
+      +materialized: table
+      +tags: ['gold', 'mart']
+
+# ============================================================
+# Variables (can be overridden at runtime)
+# ============================================================
+vars:
+  # Date range for incremental processing
+  start_date: '2024-01-01'
+  # Lookback days for incremental models
+  lookback_days: 3

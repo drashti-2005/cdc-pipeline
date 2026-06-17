@@ -226,6 +226,90 @@ services:
       - cdc-network
     restart: unless-stopped
 
+  # ============================================================
+  # ORCHESTRATION LAYER - Apache Airflow
+  # ============================================================
+  
+  # Airflow: Workflow orchestration (schedules dbt runs, monitors pipeline)
+  # Using standalone mode for simplicity (webserver + scheduler in one)
+  airflow:
+    image: apache/airflow:2.10.4-python3.11
+    container_name: airflow
+    environment:
+      # --- Core Settings ---
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/dags
+      
+      # --- Database (use PostgreSQL target for Airflow metadata) ---
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow_user:airflow_password@airflow-db:5432/airflow_db
+      
+      # --- Webserver ---
+      AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
+      AIRFLOW__WEBSERVER__SECRET_KEY: "cdc-pipeline-secret-key-change-in-prod"
+      
+      # --- API ---
+      AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth
+      
+      # --- Connection to target PostgreSQL for dbt ---
+      TARGET_PG_HOST: postgres-target
+      TARGET_PG_PORT: 5432
+      TARGET_PG_DB: ${TARGET_PG_DB}
+      TARGET_PG_USER: ${TARGET_PG_USER}
+      TARGET_PG_PASSWORD: ${TARGET_PG_PASSWORD}
+      
+      # --- dbt path ---
+      DBT_PROFILES_DIR: /opt/dbt
+    volumes:
+      - ../airflow/dags:/opt/airflow/dags:ro
+      - ../airflow/plugins:/opt/airflow/plugins:ro
+      - ../dbt:/opt/dbt:ro
+      - airflow_logs:/opt/airflow/logs
+    ports:
+      - "8080:8080"
+    depends_on:
+      airflow-db:
+        condition: service_healthy
+      postgres-target:
+        condition: service_healthy
+    command: >
+      bash -c "
+        pip install dbt-postgres --quiet &&
+        airflow db migrate &&
+        airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com || true &&
+        airflow scheduler &
+        airflow webserver
+      "
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - cdc-network
+    restart: unless-stopped
+
+  # Airflow metadata database (separate from target to keep things clean)
+  airflow-db:
+    image: postgres:16-alpine
+    container_name: airflow-db
+    environment:
+      POSTGRES_DB: airflow_db
+      POSTGRES_USER: airflow_user
+      POSTGRES_PASSWORD: airflow_password
+    volumes:
+      - airflow_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airflow_user -d airflow_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - cdc-network
+    restart: unless-stopped
+
 # ============================================================
 # NETWORKS - How containers communicate
 # ============================================================
@@ -252,3 +336,7 @@ volumes:
     name: cdc_prometheus_data
   grafana_data:
     name: cdc_grafana_data
+  airflow_logs:
+    name: cdc_airflow_logs
+  airflow_db_data:
+    name: cdc_airflow_db_data

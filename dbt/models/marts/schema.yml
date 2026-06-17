@@ -1,0 +1,59 @@
+# ============================================================
+# Mart Models Documentation & Tests
+# ============================================================
+
+version: 2
+
+models:
+  - name: mart_daily_revenue
+    description: "Daily aggregated revenue and order metrics for finance dashboards"
+    columns:
+      - name: order_date
+        description: "Date dimension"
+        tests: [unique, not_null]
+      - name: gross_revenue
+        description: "Total value of all orders"
+      - name: realized_revenue
+        description: "Revenue from completed orders only"
+      - name: completion_rate
+        description: "Percentage of orders successfully delivered"
+      - name: mtd_revenue
+        description: "Month-to-date running total"
+
+  - name: mart_customer_360
+    description: "Complete customer profile with lifetime metrics for CRM"
+    columns:
+      - name: customer_id
+        description: "Primary key"
+        tests: [unique, not_null]
+      - name: customer_tier
+        description: "Value segment (prospect/bronze/silver/gold/platinum)"
+        tests:
+          - accepted_values:
+              values: ['prospect', 'bronze', 'silver', 'gold', 'platinum']
+      - name: engagement_status
+        description: "Activity status based on recency"
+        tests:
+          - accepted_values:
+              values: ['never_ordered', 'active', 'at_risk', 'dormant', 'churned']
+      - name: lifetime_revenue
+        description: "Total revenue from this customer"
+
+  - name: mart_product_performance
+    description: "Product sales analytics and inventory alerts"
+    columns:
+      - name: product_id
+        description: "Primary key"
+        tests: [unique, not_null]
+      - name: sales_velocity
+        description: "Sales speed category"
+        tests:
+          - accepted_values:
+              values: ['no_sales', 'bestseller', 'steady', 'slow_mover', 'moderate']
+      - name: inventory_alert
+        description: "Stock level warning"
+        tests:
+          - accepted_values:
+              values: ['critical_out_of_stock', 'reorder_urgent', 'reorder_soon', 'adequate']
+      - name: revenue_rank
+        description: "Product rank by total revenue (1 = highest)"
