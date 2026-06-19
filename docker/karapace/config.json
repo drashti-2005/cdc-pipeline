@@ -1,0 +1,12 @@
+{
+    "bootstrap_uri": "kafka:29092",
+    "host": "0.0.0.0",
+    "port": 8081,
+    "registry_host": "0.0.0.0",
+    "registry_port": 8081,
+    "log_level": "WARNING",
+    "compatibility": "BACKWARD",
+    "master_eligibility": true,
+    "replication_factor": 1,
+    "topic_name": "_schemas"
+}

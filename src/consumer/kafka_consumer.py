@@ -49,6 +49,7 @@ A: Consumers pause, partitions are reassigned, then resume.
 import logging
 import signal
 import sys
+import time
 from typing import Optional
 
 from confluent_kafka import Consumer, KafkaError, KafkaException
@@ -56,6 +57,13 @@ from confluent_kafka import Consumer, KafkaError, KafkaException
 from src.consumer import config
 from src.consumer.event_router import EventRouter
 from src.schemas.cdc_event import CDCEvent
+from src.metrics import (
+    start_metrics_server,
+    record_consumer_event,
+    CONSUMER_PROCESSING_DURATION,
+    CONSUMER_LAG,
+    CONSUMER_OFFSET,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -122,6 +130,12 @@ class CDCConsumer:
         self.setup_signal_handlers()
         self._running = True
 
+        # Start Prometheus metrics server
+        try:
+            start_metrics_server(port=8000)
+        except Exception as e:
+            logger.warning(f"Could not start metrics server: {e}")
+
         # Subscribe to configured topics
         self._consumer.subscribe(config.KAFKA_TOPICS)
         logger.info(f"Subscribed to topics: {config.KAFKA_TOPICS}")
@@ -150,11 +164,22 @@ class CDCConsumer:
             self._handle_error(msg.error())
             return
 
+        # Record metrics
+        topic = msg.topic()
+        partition = msg.partition()
+        offset = msg.offset()
+        record_consumer_event(topic)
+        CONSUMER_OFFSET.labels(topic=topic, partition=partition).set(offset)
+
         # Process the message
         try:
+            start_time = time.time()
             event = self._parse_message(msg)
             if event:
                 success = self._router.route(event)
+                processing_time = time.time() - start_time
+                CONSUMER_PROCESSING_DURATION.observe(processing_time)
+                
                 if success:
                     self._messages_processed += 1
 

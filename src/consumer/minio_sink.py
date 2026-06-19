@@ -44,6 +44,7 @@ from minio.error import S3Error
 
 from src.consumer import config
 from src.schemas.cdc_event import CDCEvent
+from src.metrics import record_minio_write, MINIO_BUFFER_SIZE
 
 logger = logging.getLogger(__name__)
 
@@ -117,6 +118,9 @@ class MinIOSink:
 
         with self._buffer_lock:
             self._buffers[table].append(event)
+            
+            # Update buffer size metric
+            MINIO_BUFFER_SIZE.labels(table=table).set(len(self._buffers[table]))
 
             # Check if we should flush due to size
             if len(self._buffers[table]) >= config.MINIO_BATCH_SIZE:
@@ -163,6 +167,7 @@ class MinIOSink:
 
         # Upload to MinIO
         try:
+            start_time = time()
             self.client.put_object(
                 bucket_name=config.MINIO_BUCKET,
                 object_name=path,
@@ -170,11 +175,20 @@ class MinIOSink:
                 length=len(data),
                 content_type="application/x-ndjson",
             )
-            logger.info(f"Wrote {len(events)} events to s3://{config.MINIO_BUCKET}/{path}")
+            duration = time() - start_time
+            event_count = len(events)
+            
+            # Record metrics
+            record_minio_write(table, event_count, duration)
+            
+            logger.info(f"Wrote {event_count} events to s3://{config.MINIO_BUCKET}/{path}")
 
             # Clear buffer and update flush time
             self._buffers[table] = []
             self._last_flush[table] = time()
+            
+            # Update buffer size metric
+            MINIO_BUFFER_SIZE.labels(table=table).set(0)
 
         except S3Error as e:
             logger.error(f"Failed to write to MinIO: {e}")

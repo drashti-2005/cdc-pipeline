@@ -158,6 +158,13 @@ class CDCEvent(BaseModel):
     def is_delete(self) -> bool:
         return self.operation == OperationType.DELETE
 
+    def get_kafka_topic(self) -> str:
+        """Generate the Kafka topic name for this event.
+        
+        Format: cdc.{database}.{schema}.{table}
+        """
+        return f"cdc.{self.source.database}.{self.source.schema_name}.{self.source.table}"
+
 
 # ============================================================
 # Dead Letter Queue Event (wraps a failed CDC event)

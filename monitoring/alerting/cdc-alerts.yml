@@ -1,0 +1,154 @@
+# ============================================================
+# CDC Pipeline Alerting Rules
+# ============================================================
+# These rules fire when the pipeline is unhealthy.
+# Prometheus evaluates them every 15 seconds.
+#
+# SEVERITY LEVELS:
+# - critical: Page on-call immediately (pipeline down)
+# - warning: Investigate during business hours
+# - info: Log for analysis, no immediate action
+#
+# HOW ALERTS WORK:
+# 1. Expression evaluates to > 0 for 'for' duration
+# 2. Alert moves from 'pending' to 'firing'
+# 3. Alertmanager routes to configured receivers
+# ============================================================
+
+groups:
+  - name: cdc-pipeline-alerts
+    rules:
+      # ========================================================
+      # Consumer Alerts
+      # ========================================================
+      
+      - alert: CDCConsumerDown
+        expr: up{job="cdc-pipeline"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "CDC Consumer is down"
+          description: "The CDC consumer metrics endpoint is not responding. The consumer may have crashed or been terminated."
+          runbook_url: "https://docs.example.com/runbooks/cdc-consumer-down"
+
+      - alert: CDCHighFailureRate
+        expr: |
+          sum(rate(cdc_consumer_events_failed_total[5m]))
+          / sum(rate(cdc_consumer_events_total[5m]))
+          > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CDC event failure rate"
+          description: "More than 5% of events are failing to process. Check the dead letter queue and sink health."
+          runbook_url: "https://docs.example.com/runbooks/high-failure-rate"
+
+      - alert: CDCNoEventsProcessed
+        expr: |
+          sum(rate(cdc_consumer_events_total[10m])) == 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "No CDC events being processed"
+          description: "No events have been consumed from Kafka in the last 10 minutes. Check Kafka connectivity and producer health."
+          runbook_url: "https://docs.example.com/runbooks/no-events"
+
+      - alert: CDCHighProcessingLatency
+        expr: |
+          histogram_quantile(0.99, 
+            sum(rate(cdc_consumer_processing_duration_seconds_bucket[5m])) by (le)
+          ) > 1.0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CDC processing latency"
+          description: "99th percentile processing latency exceeds 1 second. The pipeline may be overloaded or sinks may be slow."
+          runbook_url: "https://docs.example.com/runbooks/high-latency"
+
+      # ========================================================
+      # PostgreSQL Sink Alerts
+      # ========================================================
+
+      - alert: CDCPostgresConnectionErrors
+        expr: |
+          increase(cdc_postgres_connection_errors_total[5m]) > 5
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL connection errors detected"
+          description: "Multiple connection errors to target PostgreSQL database. Check database health and network connectivity."
+          runbook_url: "https://docs.example.com/runbooks/postgres-connection"
+
+      - alert: CDCPostgresSlowWrites
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(cdc_postgres_write_duration_seconds_bucket[5m])) by (le)
+          ) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Slow PostgreSQL writes"
+          description: "95th percentile PostgreSQL write latency exceeds 500ms. Check target database load and indexes."
+          runbook_url: "https://docs.example.com/runbooks/postgres-slow"
+
+      # ========================================================
+      # MinIO Sink Alerts
+      # ========================================================
+
+      - alert: CDCMinIOBufferBacklog
+        expr: |
+          sum(cdc_minio_buffer_size) > 1000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "MinIO buffer backlog growing"
+          description: "More than 1000 events are waiting to be flushed to MinIO. Check MinIO health and flush settings."
+          runbook_url: "https://docs.example.com/runbooks/minio-backlog"
+
+      - alert: CDCMinIOSlowWrites
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(cdc_minio_write_duration_seconds_bucket[5m])) by (le)
+          ) > 5.0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Slow MinIO writes"
+          description: "95th percentile MinIO write latency exceeds 5 seconds. Check MinIO health and network."
+          runbook_url: "https://docs.example.com/runbooks/minio-slow"
+
+      # ========================================================
+      # Deduplication Alerts
+      # ========================================================
+
+      - alert: CDCHighDuplicateRate
+        expr: |
+          sum(rate(cdc_dedup_cache_hits_total[5m]))
+          / (sum(rate(cdc_dedup_cache_hits_total[5m])) + sum(rate(cdc_dedup_cache_misses_total[5m])))
+          > 0.1
+        for: 10m
+        labels:
+          severity: info
+        annotations:
+          summary: "High duplicate event rate"
+          description: "More than 10% of events are duplicates. This may indicate consumer reprocessing or Kafka issues."
+          runbook_url: "https://docs.example.com/runbooks/duplicates"
+
+      - alert: CDCDedupCacheNearCapacity
+        expr: |
+          cdc_dedup_cache_size / 100000 > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Deduplication cache near capacity"
+          description: "Deduplication cache is over 90% full. Old entries will be evicted, potentially allowing duplicates through."
+          runbook_url: "https://docs.example.com/runbooks/dedup-cache"

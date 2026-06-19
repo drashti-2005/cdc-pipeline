@@ -1,0 +1,87 @@
+{
+  "type": "record",
+  "name": "CDCEvent",
+  "namespace": "com.cdc.pipeline",
+  "doc": "A Change Data Capture event representing a database change. This schema is designed for BACKWARD compatibility - new versions can read old data.",
+  "fields": [
+    {
+      "name": "event_id",
+      "type": "string",
+      "doc": "Unique identifier (UUID) for deduplication"
+    },
+    {
+      "name": "event_timestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "When the change occurred (UTC milliseconds)"
+    },
+    {
+      "name": "source",
+      "type": {
+        "type": "record",
+        "name": "SourceInfo",
+        "doc": "Metadata about where the change came from",
+        "fields": [
+          {
+            "name": "database",
+            "type": "string",
+            "doc": "Source database name"
+          },
+          {
+            "name": "schema",
+            "type": "string",
+            "doc": "Database schema (e.g., 'public')"
+          },
+          {
+            "name": "table",
+            "type": "string",
+            "doc": "Table that was modified"
+          },
+          {
+            "name": "transaction_id",
+            "type": ["null", "long"],
+            "default": null,
+            "doc": "PostgreSQL transaction ID"
+          },
+          {
+            "name": "lsn",
+            "type": ["null", "string"],
+            "default": null,
+            "doc": "WAL Log Sequence Number (unique position)"
+          }
+        ]
+      },
+      "doc": "Source database metadata"
+    },
+    {
+      "name": "operation",
+      "type": {
+        "type": "enum",
+        "name": "OperationType",
+        "symbols": ["INSERT", "UPDATE", "DELETE"],
+        "doc": "Type of database operation"
+      },
+      "doc": "What type of change occurred"
+    },
+    {
+      "name": "before",
+      "type": ["null", "string"],
+      "default": null,
+      "doc": "Row data BEFORE the change (JSON string, null for INSERT)"
+    },
+    {
+      "name": "after",
+      "type": ["null", "string"],
+      "default": null,
+      "doc": "Row data AFTER the change (JSON string, null for DELETE)"
+    },
+    {
+      "name": "schema_version",
+      "type": "int",
+      "default": 1,
+      "doc": "Version of this schema (for evolution tracking)"
+    }
+  ]
+}

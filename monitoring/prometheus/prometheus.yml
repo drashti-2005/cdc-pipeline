@@ -12,6 +12,21 @@ global:
   evaluation_interval: 15s
 
 # ============================================================
+# Alerting Rules
+# ============================================================
+rule_files:
+  - /etc/prometheus/alerts/*.yml
+
+# ============================================================
+# Alertmanager Configuration (optional)
+# ============================================================
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets:
+#           - alertmanager:9093
+
+# ============================================================
 # Scrape Targets - Services that expose metrics
 # ============================================================
 scrape_configs:
@@ -20,12 +35,19 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9090']
 
-  # CDC Pipeline metrics (will be exposed by our Python consumer in Phase 15)
+  # CDC Pipeline Consumer metrics
   - job_name: 'cdc-pipeline'
     static_configs:
+      # host.docker.internal allows Docker containers to reach host machine
       - targets: ['host.docker.internal:8000']
-    # Don't fail if target isn't up yet (we'll add it in Phase 15)
     scrape_interval: 10s
+    # Honor the timestamps from the application
+    honor_timestamps: true
+    # Labels to add to all scraped metrics
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: cdc-consumer
 
   # PostgreSQL Source metrics (optional - via pg_exporter in later phases)
   # - job_name: 'postgres-source'

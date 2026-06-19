@@ -47,6 +47,8 @@ from collections import OrderedDict
 from threading import Lock
 from typing import Optional
 
+from src.metrics import DEDUP_CACHE_SIZE
+
 logger = logging.getLogger(__name__)
 
 
@@ -114,6 +116,9 @@ class DeduplicationCache:
                 evicted_id, _ = self._cache.popitem(last=False)
                 logger.debug(f"Evicted from dedup cache: {evicted_id}")
 
+            # Update cache size metric
+            DEDUP_CACHE_SIZE.set(len(self._cache))
+
             return False
 
     def mark_processed(self, event_id: str) -> None:
@@ -160,10 +165,12 @@ class DeduplicationCache:
     def get_stats(self) -> dict:
         """Get cache statistics for monitoring."""
         with self._lock:
+            total = self._hits + self._misses
+            hit_rate = (self._hits / total * 100) if total > 0 else 0.0
             return {
-                "size": len(self._cache),
+                "cache_size": len(self._cache),
                 "max_size": self._max_size,
                 "hits": self._hits,
                 "misses": self._misses,
-                "hit_rate_percent": self.hit_rate,
+                "hit_rate_percent": hit_rate,
             }

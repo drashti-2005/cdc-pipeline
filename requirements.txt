@@ -3,7 +3,7 @@
 # ============================================================
 
 # --- Kafka ---
-confluent-kafka==2.6.1
+confluent-kafka[avro]==2.6.1
 kafka-python==2.0.2
 
 # --- PostgreSQL ---
@@ -27,6 +27,7 @@ pyyaml==6.0.2
 # --- Serialization ---
 orjson==3.10.12
 avro-python3==1.10.2
+fastavro==1.9.7
 
 # --- HTTP (for health checks) ---
 requests==2.32.3

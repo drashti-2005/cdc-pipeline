@@ -47,6 +47,13 @@ from src.consumer.deduplication import DeduplicationCache
 from src.consumer.minio_sink import MinIOSink
 from src.consumer.postgres_sink import PostgresSink
 from src.schemas.cdc_event import CDCEvent, DLQEvent
+from src.metrics import (
+    record_event_processed,
+    record_event_failed,
+    CONSUMER_EVENTS_DEDUPLICATED,
+    DEDUP_CACHE_HITS,
+    DEDUP_CACHE_MISSES,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -124,8 +131,14 @@ class EventRouter:
         # Step 1: Deduplication check
         if self._dedup and self._dedup.is_duplicate(event.event_id):
             self._events_deduplicated += 1
+            CONSUMER_EVENTS_DEDUPLICATED.inc()
+            DEDUP_CACHE_HITS.inc()
             logger.debug(f"Skipping duplicate event: {event.event_id}")
             return True
+        
+        # Track cache miss (new event)
+        if self._dedup:
+            DEDUP_CACHE_MISSES.inc()
 
         # Step 2: Route to each sink with retry
         all_succeeded = True
@@ -134,11 +147,15 @@ class EventRouter:
         if self._minio_sink:
             if not self._write_with_retry(self._minio_sink, event, "MinIO"):
                 all_succeeded = False
+            else:
+                record_event_processed("minio")
 
         # PostgreSQL sink (target replication)
         if self._postgres_sink:
             if not self._write_with_retry(self._postgres_sink, event, "PostgreSQL"):
                 all_succeeded = False
+            else:
+                record_event_processed("postgres")
 
         # Update metrics
         if all_succeeded:
@@ -176,6 +193,9 @@ class EventRouter:
                 if attempt < config.MAX_RETRIES - 1:
                     time.sleep(backoff)
 
+        # Record failure metric
+        sink_label = sink_name.lower().replace("postgresql", "postgres")
+        record_event_failed(sink_label, type(last_error).__name__)
         logger.error(f"{sink_name} write failed after {config.MAX_RETRIES} attempts: {last_error}")
         return False
 

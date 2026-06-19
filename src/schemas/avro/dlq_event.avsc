@@ -1,0 +1,61 @@
+{
+  "type": "record",
+  "name": "DLQEvent",
+  "namespace": "com.cdc.pipeline",
+  "doc": "Dead Letter Queue event - wraps a failed CDC event with error details",
+  "fields": [
+    {
+      "name": "dlq_id",
+      "type": "string",
+      "doc": "Unique identifier for this DLQ entry"
+    },
+    {
+      "name": "original_event",
+      "type": "string",
+      "doc": "The original CDC event that failed (JSON serialized)"
+    },
+    {
+      "name": "error_message",
+      "type": "string",
+      "doc": "Human-readable error description"
+    },
+    {
+      "name": "error_type",
+      "type": "string",
+      "doc": "Exception class name (e.g., 'ValidationError')"
+    },
+    {
+      "name": "failed_sink",
+      "type": "string",
+      "doc": "Which sink failed (e.g., 'postgres', 'minio')"
+    },
+    {
+      "name": "retry_count",
+      "type": "int",
+      "default": 0,
+      "doc": "Number of retry attempts"
+    },
+    {
+      "name": "first_failure_timestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "When the first failure occurred"
+    },
+    {
+      "name": "last_failure_timestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "When the most recent failure occurred"
+    },
+    {
+      "name": "stack_trace",
+      "type": ["null", "string"],
+      "default": null,
+      "doc": "Full stack trace for debugging"
+    }
+  ]
+}

@@ -33,6 +33,7 @@ We handle this with:
 """
 
 import logging
+import time
 from contextlib import contextmanager
 from typing import Any, Generator, Optional
 
@@ -42,6 +43,7 @@ from psycopg2.extras import RealDictCursor
 
 from src.consumer import config
 from src.schemas.cdc_event import CDCEvent, OperationType
+from src.metrics import record_postgres_write, POSTGRES_CONNECTION_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -80,6 +82,10 @@ class PostgresSink:
                 f"{config.TARGET_PG_HOST}:{config.TARGET_PG_PORT}"
             )
         except psycopg2.Error as e:
+            POSTGRES_CONNECTION_ERRORS.inc()
+            logger.error(f"Failed to connect to target PostgreSQL: {e}")
+            raise
+        except psycopg2.Error as e:
             logger.error(f"Failed to connect to target PostgreSQL: {e}")
             raise
 
@@ -104,6 +110,7 @@ class PostgresSink:
         Dispatches to the appropriate handler based on operation type.
         Each operation is designed to be idempotent.
         """
+        start_time = time.time()
         try:
             if event.operation == OperationType.INSERT:
                 self._apply_insert(event)
@@ -113,6 +120,11 @@ class PostgresSink:
                 self._apply_delete(event)
             else:
                 logger.warning(f"Unknown operation type: {event.operation}")
+                return
+            
+            # Record successful write metric
+            duration = time.time() - start_time
+            record_postgres_write(event.source.table, event.operation.value, duration)
         except Exception as e:
             logger.error(f"Failed to apply event {event.event_id}: {e}")
             raise

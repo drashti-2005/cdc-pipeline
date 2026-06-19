@@ -180,6 +180,8 @@ services:
     volumes:
       # Mount our Prometheus config file
       - ../monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      # Mount alerting rules
+      - ../monitoring/alerting:/etc/prometheus/alerts:ro
       - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
