@@ -236,6 +236,7 @@ jobs:
           context: .
           file: ./docker/Dockerfile
           push: false
+          load: true  # Load image into Docker daemon for testing
           tags: cdc-pipeline:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
