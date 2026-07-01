@@ -100,7 +100,7 @@ class TestDLQHandler:
     @pytest.fixture
     def mock_producer(self):
         """Create a mock Kafka producer."""
-        with patch("src.consumer.dlq_handler.Producer") as mock:
+        with patch("consumer.dlq_handler.Producer") as mock:
             producer_instance = MagicMock()
             mock.return_value = producer_instance
             yield producer_instance

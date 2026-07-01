@@ -101,13 +101,14 @@ jobs:
         run: |
           python -m pytest tests/unit/ \
             -n auto \
-            --tb=short \
+            --tb=line \
             --cov=consumer --cov=producer --cov=cicd --cov=monitoring \
             --cov=multiregion --cov=quality --cov=schemas --cov=security --cov=metrics \
             --cov-report=xml \
-            --cov-report=term-missing:skip-covered \
             --junitxml=test-results.xml \
+            --maxfail=5 \
             -q
+        timeout-minutes: 10
       
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
