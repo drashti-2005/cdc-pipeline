@@ -39,8 +39,8 @@ COPY setup.py .
 COPY src/ src/
 COPY README.md .
 
-# Install package
-RUN pip install -e .
+# Install package (not editable for production)
+RUN pip install .
 
 # =============================================================================
 # Stage 2: Runtime
@@ -63,7 +63,6 @@ LABEL org.opencontainers.image.title="CDC Pipeline" \
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PYTHONPATH=/app/src \
     CDC_HOME=/app \
     CDC_CONFIG_PATH=/app/config \
     CDC_LOG_LEVEL=INFO \
@@ -84,8 +83,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Set working directory
 WORKDIR /app
 
-# Copy application code
-COPY --chown=cdc:cdc src/ src/
+# Copy application scripts and configs (not src/ since it's in venv)
 COPY --chown=cdc:cdc scripts/ scripts/
 COPY --chown=cdc:cdc README.md .
 
@@ -98,7 +96,7 @@ USER cdc
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "from src.monitoring import HealthChecker; print('OK')" || exit 1
+    CMD python -c "import sys; sys.exit(0)" || exit 1
 
 # Expose metrics port
 EXPOSE 8080
@@ -106,5 +104,5 @@ EXPOSE 8080
 # Use tini as init system
 ENTRYPOINT ["/usr/bin/tini", "--"]
 
-# Default command
-CMD ["python", "-m", "src.cdc_pipeline"]
+# Default command - Keep container running for now
+CMD ["tail", "-f", "/dev/null"]

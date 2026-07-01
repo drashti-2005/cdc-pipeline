@@ -242,7 +242,7 @@ jobs:
       
       - name: Test Docker image
         run: |
-          docker run --rm cdc-pipeline:${{ github.sha }} python -c "import consumer; import producer; print('Image OK')"
+          docker run --rm cdc-pipeline:${{ github.sha }} python -c "import sys; print(sys.path); import consumer; import producer; print('Image OK')"
 
   # =============================================================================
   # Security Scan
