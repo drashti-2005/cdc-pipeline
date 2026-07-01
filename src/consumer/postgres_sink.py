@@ -41,7 +41,7 @@ import psycopg2
 from psycopg2 import sql
 from psycopg2.extras import RealDictCursor
 
-from consumer import config
+from . import config
 from schemas.cdc_event import CDCEvent, OperationType
 from metrics import record_postgres_write, POSTGRES_CONNECTION_ERRORS
 

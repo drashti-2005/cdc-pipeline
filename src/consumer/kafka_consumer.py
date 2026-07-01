@@ -54,7 +54,7 @@ from typing import Optional
 
 from confluent_kafka import Consumer, KafkaError, KafkaException
 
-from consumer import config
+from . import config
 from consumer.event_router import EventRouter
 from schemas.cdc_event import CDCEvent
 from metrics import (

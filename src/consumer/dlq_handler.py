@@ -44,7 +44,7 @@ from typing import Any, Optional
 
 from confluent_kafka import Producer
 
-from consumer import config
+from . import config
 from metrics import (
     DLQ_EVENTS_TOTAL,
     DLQ_EVENTS_BY_REASON,

@@ -38,7 +38,7 @@ import logging
 from dataclasses import dataclass
 from typing import Optional
 
-from consumer import config
+from . import config
 from consumer.dlq_handler import DLQHandler, FailureReason, get_dlq_handler
 from consumer.event_router import EventRouter
 from quality import QualityChecker, create_cdc_event_checker

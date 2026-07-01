@@ -42,7 +42,7 @@ from typing import Optional
 from minio import Minio
 from minio.error import S3Error
 
-from consumer import config
+from . import config
 from schemas.cdc_event import CDCEvent
 from metrics import record_minio_write, MINIO_BUFFER_SIZE
 

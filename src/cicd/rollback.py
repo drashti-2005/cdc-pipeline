@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from cicd.config import DeploymentConfig, Environment
+from .config import DeploymentConfig, Environment
 
 logger = logging.getLogger(__name__)
 

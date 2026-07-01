@@ -42,7 +42,7 @@ from typing import Optional
 
 from confluent_kafka import Producer
 
-from consumer import config
+from . import config
 from consumer.deduplication import DeduplicationCache
 from consumer.minio_sink import MinIOSink
 from consumer.postgres_sink import PostgresSink

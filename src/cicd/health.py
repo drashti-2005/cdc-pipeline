@@ -13,7 +13,7 @@ from typing import Any, Callable, Dict, List, Optional
 from urllib.request import urlopen
 from urllib.error import URLError
 
-from cicd.config import DeploymentConfig
+from .config import DeploymentConfig
 
 logger = logging.getLogger(__name__)
 
