@@ -1,0 +1,347 @@
+# CDC Pipeline Kubernetes Deployment (Production)
+# This configuration includes additional security and reliability settings
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cdc-production
+  labels:
+    app.kubernetes.io/name: cdc-pipeline
+    environment: production
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cdc-pipeline-config
+  namespace: cdc-production
+  labels:
+    app.kubernetes.io/name: cdc-pipeline
+data:
+  CDC_LOG_LEVEL: "WARNING"
+  CDC_LOG_FORMAT: "json"
+  KAFKA_TOPIC_PREFIX: "cdc.source.public"
+  KAFKA_NUM_PARTITIONS: "12"
+  BATCH_SIZE: "5000"
+  POLL_INTERVAL_SECONDS: "0.5"
+  ENABLE_METRICS: "true"
+  METRICS_PORT: "8080"
+
+---
+# Note: In production, use external secrets management (Vault, AWS Secrets Manager, etc.)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cdc-pipeline-secrets
+  namespace: cdc-production
+  labels:
+    app.kubernetes.io/name: cdc-pipeline
+type: Opaque
+stringData:
+  # These should be replaced with actual production credentials
+  # Consider using external-secrets or sealed-secrets
+  SOURCE_DB_HOST: "postgres-source.cdc-production.svc.cluster.local"
+  SOURCE_DB_PORT: "5432"
+  SOURCE_DB_USER: "cdc_user"
+  SOURCE_DB_PASSWORD: "REPLACE_WITH_SECURE_PASSWORD"
+  SOURCE_DB_NAME: "source_db"
+  TARGET_DB_HOST: "postgres-target.cdc-production.svc.cluster.local"
+  TARGET_DB_PORT: "5432"
+  TARGET_DB_USER: "cdc_user"
+  TARGET_DB_PASSWORD: "REPLACE_WITH_SECURE_PASSWORD"
+  TARGET_DB_NAME: "target_db"
+  KAFKA_BOOTSTRAP_SERVERS: "kafka.cdc-production.svc.cluster.local:9092"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cdc-pipeline
+  namespace: cdc-production
+  labels:
+    app.kubernetes.io/name: cdc-pipeline
+    app.kubernetes.io/component: pipeline
+    environment: production
+  annotations:
+    description: "CDC Pipeline - Production Deployment"
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cdc-pipeline
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: cdc-pipeline
+        app.kubernetes.io/component: pipeline
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: cdc-pipeline
+      
+      # Security context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      
+      # Termination grace period for clean shutdown
+      terminationGracePeriodSeconds: 60
+      
+      containers:
+        - name: cdc-pipeline
+          image: ghcr.io/your-org/cdc-pipeline:latest
+          imagePullPolicy: Always
+          
+          # Container security
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          
+          envFrom:
+            - configMapRef:
+                name: cdc-pipeline-config
+            - secretRef:
+                name: cdc-pipeline-secrets
+          
+          # Production resource limits
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          
+          # Health probes
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 3
+          
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 3
+          
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          
+          # Graceful shutdown
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "sleep 15"]
+          
+          volumeMounts:
+            - name: config-volume
+              mountPath: /app/config
+              readOnly: true
+            - name: logs
+              mountPath: /app/logs
+            - name: tmp
+              mountPath: /tmp
+      
+      volumes:
+        - name: config-volume
+          configMap:
+            name: cdc-pipeline-config
+        - name: logs
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+      
+      # Pod scheduling
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: cdc-pipeline
+              topologyKey: kubernetes.io/hostname
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: node-type
+                    operator: In
+                    values:
+                      - worker
+      
+      # Topology spread for high availability
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: cdc-pipeline
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cdc-pipeline
+  namespace: cdc-production
+  labels:
+    app.kubernetes.io/name: cdc-pipeline
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: cdc-pipeline
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cdc-pipeline
+  namespace: cdc-production
+  labels:
+    app.kubernetes.io/name: cdc-pipeline
+
+---
+# Production HPA with more aggressive scaling
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: cdc-pipeline
+  namespace: cdc-production
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: cdc-pipeline
+  minReplicas: 3
+  maxReplicas: 20
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 70
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Percent
+          value: 10
+          periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 15
+        - type: Pods
+          value: 4
+          periodSeconds: 15
+      selectPolicy: Max
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: cdc-pipeline
+  namespace: cdc-production
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cdc-pipeline
+
+---
+# Network policy for production security
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: cdc-pipeline
+  namespace: cdc-production
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: cdc-pipeline
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: monitoring
+      ports:
+        - protocol: TCP
+          port: 8080
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 8080
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: postgresql
+      ports:
+        - protocol: TCP
+          port: 5432
+    - to:
+        - podSelector:
+            matchLabels:
+              app: kafka
+      ports:
+        - protocol: TCP
+          port: 9092
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53

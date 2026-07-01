@@ -1,0 +1,143 @@
+# Docker Compose for CI/CD Testing
+# Minimal services for integration tests
+
+version: '3.8'
+
+services:
+  # =============================================================================
+  # PostgreSQL Source Database
+  # =============================================================================
+  postgres-source:
+    image: postgres:16-alpine
+    container_name: cdc-source-ci
+    environment:
+      POSTGRES_USER: cdc_user
+      POSTGRES_PASSWORD: cdc_password
+      POSTGRES_DB: source_db
+    command: >
+      postgres
+      -c wal_level=logical
+      -c max_wal_senders=10
+      -c max_replication_slots=10
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cdc_user -d source_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - cdc-ci-network
+
+  # =============================================================================
+  # PostgreSQL Target Database
+  # =============================================================================
+  postgres-target:
+    image: postgres:16-alpine
+    container_name: cdc-target-ci
+    environment:
+      POSTGRES_USER: cdc_user
+      POSTGRES_PASSWORD: cdc_password
+      POSTGRES_DB: target_db
+    ports:
+      - "5435:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cdc_user -d target_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - cdc-ci-network
+
+  # =============================================================================
+  # Kafka (KRaft mode)
+  # =============================================================================
+  kafka:
+    image: bitnami/kafka:3.8.0
+    container_name: cdc-kafka-ci
+    environment:
+      KAFKA_CFG_NODE_ID: 0
+      KAFKA_CFG_PROCESS_ROLES: controller,broker
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@kafka:9093
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_CFG_NUM_PARTITIONS: 3
+      KAFKA_CFG_DEFAULT_REPLICATION_FACTOR: 1
+    ports:
+      - "9092:9092"
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions.sh --bootstrap-server localhost:9092 || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+    networks:
+      - cdc-ci-network
+
+  # =============================================================================
+  # CDC Pipeline Application
+  # =============================================================================
+  cdc-pipeline:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: cdc-pipeline-ci
+    environment:
+      SOURCE_DB_HOST: postgres-source
+      SOURCE_DB_PORT: 5432
+      SOURCE_DB_USER: cdc_user
+      SOURCE_DB_PASSWORD: cdc_password
+      SOURCE_DB_NAME: source_db
+      TARGET_DB_HOST: postgres-target
+      TARGET_DB_PORT: 5432
+      TARGET_DB_USER: cdc_user
+      TARGET_DB_PASSWORD: cdc_password
+      TARGET_DB_NAME: target_db
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      CDC_LOG_LEVEL: DEBUG
+    depends_on:
+      postgres-source:
+        condition: service_healthy
+      postgres-target:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    networks:
+      - cdc-ci-network
+
+  # =============================================================================
+  # Test Runner
+  # =============================================================================
+  test-runner:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: cdc-test-runner
+    environment:
+      SOURCE_DB_HOST: postgres-source
+      SOURCE_DB_PORT: 5432
+      TARGET_DB_HOST: postgres-target
+      TARGET_DB_PORT: 5432
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      PYTHONPATH: /app/src
+    command: >
+      python -m pytest tests/integration/ -v --tb=short
+    depends_on:
+      postgres-source:
+        condition: service_healthy
+      postgres-target:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    volumes:
+      - ../tests:/app/tests:ro
+    networks:
+      - cdc-ci-network
+
+networks:
+  cdc-ci-network:
+    driver: bridge

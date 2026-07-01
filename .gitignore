@@ -50,3 +50,10 @@ minio-data/
 # Test coverage
 .coverage
 htmlcov/
+.pytest_cache/
+
+# Documentation
+docs/
+
+# Logs
+logs/
