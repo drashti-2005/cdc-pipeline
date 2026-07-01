@@ -14,7 +14,7 @@ import shutil
 from pathlib import Path
 from datetime import datetime, timezone
 
-from src.schemas.evolution.version import (
+from schemas.evolution.version import (
     SchemaVersion,
     VersionedSchema,
     ChangeType,
@@ -23,7 +23,7 @@ from src.schemas.evolution.version import (
     detect_change_type,
     suggest_version_bump,
 )
-from src.schemas.evolution.compatibility import (
+from schemas.evolution.compatibility import (
     CompatibilityLevel,
     CompatibilityChecker,
     CompatibilityResult,
@@ -33,12 +33,12 @@ from src.schemas.evolution.compatibility import (
     check_full_compatibility,
     get_schema_diff,
 )
-from src.schemas.evolution.registry import (
+from schemas.evolution.registry import (
     SchemaRegistry,
     LocalSchemaRegistry,
     SchemaMetadata,
 )
-from src.schemas.evolution.migration import (
+from schemas.evolution.migration import (
     SchemaMigrator,
     MigrationPlan,
     MigrationStep,

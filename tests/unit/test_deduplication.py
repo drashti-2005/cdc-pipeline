@@ -11,7 +11,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
-from src.consumer.deduplication import DeduplicationCache
+from consumer.deduplication import DeduplicationCache
 
 
 class TestDeduplicationCache:

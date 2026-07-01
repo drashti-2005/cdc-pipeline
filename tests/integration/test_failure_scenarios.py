@@ -35,8 +35,8 @@ class TestQualityCheckFailures:
     
     def test_missing_required_field(self):
         """Test failure when required field is missing."""
-        from src.consumer.event_processor import QualityAwareProcessor
-        from src.consumer.dlq_handler import DLQHandler
+        from consumer.event_processor import QualityAwareProcessor
+        from consumer.dlq_handler import DLQHandler
         
         mock_router = MagicMock()
         mock_router.get_stats.return_value = {}
@@ -60,7 +60,7 @@ class TestQualityCheckFailures:
     
     def test_invalid_operation_type(self):
         """Test failure with invalid operation type."""
-        from src.consumer.event_processor import QualityAwareProcessor
+        from consumer.event_processor import QualityAwareProcessor
         
         mock_router = MagicMock()
         mock_router.get_stats.return_value = {}
@@ -82,7 +82,7 @@ class TestQualityCheckFailures:
     
     def test_insert_without_after_data(self):
         """Test INSERT event without 'after' data."""
-        from src.consumer.event_processor import QualityAwareProcessor
+        from consumer.event_processor import QualityAwareProcessor
         
         mock_router = MagicMock()
         mock_router.get_stats.return_value = {}
@@ -103,7 +103,7 @@ class TestQualityCheckFailures:
     
     def test_multiple_validation_failures(self):
         """Test event with multiple validation failures."""
-        from src.quality import QualityChecker, RequiredFieldRule, TypeRule
+        from quality import QualityChecker, RequiredFieldRule, TypeRule
         
         checker = (
             QualityChecker(name="test")
@@ -131,7 +131,7 @@ class TestDeserializationFailures:
     
     def test_invalid_json(self):
         """Test handling of invalid JSON."""
-        from src.consumer.event_processor import QualityAwareProcessor
+        from consumer.event_processor import QualityAwareProcessor
         
         mock_router = MagicMock()
         mock_router.get_stats.return_value = {}
@@ -151,7 +151,7 @@ class TestDeserializationFailures:
     
     def test_empty_message(self):
         """Test handling of empty message."""
-        from src.consumer.event_processor import QualityAwareProcessor
+        from consumer.event_processor import QualityAwareProcessor
         
         mock_router = MagicMock()
         mock_router.get_stats.return_value = {}
@@ -170,7 +170,7 @@ class TestDeserializationFailures:
     
     def test_binary_garbage(self):
         """Test handling of binary garbage data."""
-        from src.consumer.event_processor import QualityAwareProcessor
+        from consumer.event_processor import QualityAwareProcessor
         
         mock_router = MagicMock()
         mock_router.get_stats.return_value = {}
@@ -192,7 +192,7 @@ class TestDeserializationFailures:
     
     def test_valid_json_invalid_schema(self):
         """Test valid JSON but wrong schema."""
-        from src.consumer.event_processor import QualityAwareProcessor
+        from consumer.event_processor import QualityAwareProcessor
         
         mock_router = MagicMock()
         mock_router.get_stats.return_value = {}
@@ -222,7 +222,7 @@ class TestSinkFailures:
     
     def test_router_exception_goes_to_dlq(self):
         """Test that router exceptions are sent to DLQ."""
-        from src.consumer.event_processor import QualityAwareProcessor
+        from consumer.event_processor import QualityAwareProcessor
         
         mock_router = MagicMock()
         mock_router.route.side_effect = Exception("Sink connection failed")
@@ -247,7 +247,7 @@ class TestSinkFailures:
     
     def test_router_returns_false_is_failure(self):
         """Test that router returning False is treated as failure."""
-        from src.consumer.event_processor import QualityAwareProcessor
+        from consumer.event_processor import QualityAwareProcessor
         
         mock_router = MagicMock()
         mock_router.route.return_value = False  # Sink failed
@@ -280,7 +280,7 @@ class TestRecoveryScenarios:
     
     def test_continue_after_quality_failure(self):
         """Test that pipeline continues processing after quality failure."""
-        from src.consumer.event_processor import QualityAwareProcessor
+        from consumer.event_processor import QualityAwareProcessor
         
         mock_router = MagicMock()
         mock_router.route.return_value = True
@@ -308,7 +308,7 @@ class TestRecoveryScenarios:
     
     def test_stats_track_failures(self):
         """Test that statistics track failures correctly."""
-        from src.consumer.event_processor import QualityAwareProcessor
+        from consumer.event_processor import QualityAwareProcessor
         
         mock_router = MagicMock()
         mock_router.route.return_value = True
@@ -350,7 +350,7 @@ class TestDLQMessageStructure:
     
     def test_dlq_entry_has_required_fields(self, kafka_helper, unique_test_id):
         """Test that DLQ entries have all required fields."""
-        from src.consumer.dlq_handler import DLQHandler
+        from consumer.dlq_handler import DLQHandler
         
         dlq_topic = f"test.dlq.{unique_test_id}"
         kafka_helper.create_topic(dlq_topic)
@@ -380,7 +380,7 @@ class TestDLQMessageStructure:
     
     def test_dlq_timestamps_are_iso_format(self, kafka_helper, unique_test_id):
         """Test that timestamps are in ISO format."""
-        from src.consumer.dlq_handler import DLQHandler
+        from consumer.dlq_handler import DLQHandler
         from datetime import datetime
         
         dlq_topic = f"test.dlq.{unique_test_id}"
@@ -401,7 +401,7 @@ class TestDLQMessageStructure:
     
     def test_dlq_preserves_original_event_exactly(self, kafka_helper, unique_test_id):
         """Test that original event is preserved exactly."""
-        from src.consumer.dlq_handler import DLQHandler
+        from consumer.dlq_handler import DLQHandler
         
         dlq_topic = f"test.dlq.{unique_test_id}"
         kafka_helper.create_topic(dlq_topic)
@@ -435,7 +435,7 @@ class TestEdgeCases:
     
     def test_very_large_event(self):
         """Test handling of large events."""
-        from src.consumer.event_processor import QualityAwareProcessor
+        from consumer.event_processor import QualityAwareProcessor
         
         mock_router = MagicMock()
         mock_router.route.return_value = True
@@ -461,7 +461,7 @@ class TestEdgeCases:
     
     def test_unicode_in_events(self):
         """Test handling of unicode characters."""
-        from src.consumer.event_processor import QualityAwareProcessor
+        from consumer.event_processor import QualityAwareProcessor
         
         mock_router = MagicMock()
         mock_router.route.return_value = True
@@ -489,7 +489,7 @@ class TestEdgeCases:
     
     def test_null_values_in_event(self):
         """Test handling of null values."""
-        from src.consumer.event_processor import QualityAwareProcessor
+        from consumer.event_processor import QualityAwareProcessor
         
         mock_router = MagicMock()
         mock_router.route.return_value = True

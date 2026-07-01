@@ -16,7 +16,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.monitoring.metrics import (
+from monitoring.metrics import (
     MetricType,
     Counter,
     Gauge,
@@ -27,7 +27,7 @@ from src.monitoring.metrics import (
     get_metrics_registry,
     create_pipeline_metrics,
 )
-from src.monitoring.alerting import (
+from monitoring.alerting import (
     AlertLevel,
     AlertState,
     Alert,
@@ -37,7 +37,7 @@ from src.monitoring.alerting import (
     WebhookAlertChannel,
     create_pipeline_alert_rules,
 )
-from src.monitoring.health import (
+from monitoring.health import (
     HealthStatus,
     HealthResult,
     HealthCheck,
@@ -48,7 +48,7 @@ from src.monitoring.health import (
     create_tcp_check,
     create_http_check,
 )
-from src.monitoring.dashboard import (
+from monitoring.dashboard import (
     PanelType,
     TimeRange,
     Threshold,

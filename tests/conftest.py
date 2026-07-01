@@ -32,10 +32,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-# Add src to path for imports
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Package is installed via pip install -e . so no need to manipulate sys.path
+# sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.schemas.cdc_event import CDCEvent, OperationType, SourceInfo
+from schemas.cdc_event import CDCEvent, OperationType, SourceInfo
 
 
 # ============================================================

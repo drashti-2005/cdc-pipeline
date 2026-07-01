@@ -7,7 +7,7 @@ Tests for batching, pooling, circuit breaker, rate limiting, and retry.
 import time
 import threading
 import pytest
-from src.performance.optimizations import (
+from performance.optimizations import (
     BatchProcessor,
     ObjectPool,
     CircuitBreaker,

@@ -14,7 +14,7 @@ import time
 from pathlib import Path
 from datetime import datetime, timezone
 
-from src.multiregion.config import (
+from multiregion.config import (
     Region,
     RegionConfig,
     MultiRegionConfig,
@@ -26,7 +26,7 @@ from src.multiregion.config import (
     load_region_config,
     REGION_TEMPLATES,
 )
-from src.multiregion.routing import (
+from multiregion.routing import (
     RoutingStrategy,
     RoutingDecision,
     RoundRobinRouter,
@@ -37,7 +37,7 @@ from src.multiregion.routing import (
     FailoverRouter,
     create_router,
 )
-from src.multiregion.replication import (
+from multiregion.replication import (
     ReplicationMode,
     ReplicationStatus,
     ConflictResolution,
@@ -46,7 +46,7 @@ from src.multiregion.replication import (
     ReplicationManager,
     MockReplicationTransport,
 )
-from src.multiregion.failover import (
+from multiregion.failover import (
     FailoverStrategy,
     HealthStatus,
     RegionHealth,

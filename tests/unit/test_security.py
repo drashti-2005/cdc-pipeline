@@ -14,7 +14,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.security.authentication import (
+from security.authentication import (
     Credentials,
     AuthResult,
     AuthError,
@@ -25,7 +25,7 @@ from src.security.authentication import (
     JWTAuth,
     MultiProviderAuth,
 )
-from src.security.authorization import (
+from security.authorization import (
     Permission,
     Role,
     RBACManager,
@@ -34,7 +34,7 @@ from src.security.authorization import (
     ResourcePolicy,
     PolicyEngine,
 )
-from src.security.encryption import (
+from security.encryption import (
     AESEncryptor,
     FieldEncryptor,
     KeyManager,
@@ -45,7 +45,7 @@ from src.security.encryption import (
     EncryptionError,
     DecryptionError,
 )
-from src.security.audit import (
+from security.audit import (
     AuditLevel,
     EventType,
     AuditEvent,

@@ -8,12 +8,12 @@ import time
 import json
 import pytest
 from datetime import datetime, timezone
-from src.schemas.cdc_event import CDCEvent, OperationType, SourceInfo
-from src.schemas.avro_serializer import LocalAvroSerializer
-from src.quality.data_quality import QualityChecker, create_cdc_event_checker
-from src.performance.benchmark import Benchmark, BenchmarkSuite
-from src.performance.load_generator import generate_customer_event, LoadGenerator
-from src.performance.metrics_collector import PerformanceMetrics
+from schemas.cdc_event import CDCEvent, OperationType, SourceInfo
+from schemas.avro_serializer import LocalAvroSerializer
+from quality.data_quality import QualityChecker, create_cdc_event_checker
+from performance.benchmark import Benchmark, BenchmarkSuite
+from performance.load_generator import generate_customer_event, LoadGenerator
+from performance.metrics_collector import PerformanceMetrics
 
 
 def json_serial(obj):

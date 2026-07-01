@@ -13,8 +13,8 @@ import uuid
 
 import pytest
 
-from src.consumer.postgres_sink import PostgresSink
-from src.schemas.cdc_event import CDCEvent, OperationType, SourceInfo
+from consumer.postgres_sink import PostgresSink
+from schemas.cdc_event import CDCEvent, OperationType, SourceInfo
 
 
 @pytest.fixture

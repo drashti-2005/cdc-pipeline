@@ -16,8 +16,8 @@ from io import BytesIO
 
 import pytest
 
-from src.consumer.minio_sink import MinIOSink
-from src.schemas.cdc_event import CDCEvent, OperationType, SourceInfo
+from consumer.minio_sink import MinIOSink
+from schemas.cdc_event import CDCEvent, OperationType, SourceInfo
 
 
 @pytest.fixture

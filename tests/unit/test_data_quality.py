@@ -6,7 +6,7 @@ Unit Tests for Data Quality Framework
 import uuid
 import pytest
 
-from src.quality import (
+from quality import (
     QualityChecker,
     RequiredFieldRule,
     TypeRule,

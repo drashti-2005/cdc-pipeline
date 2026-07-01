@@ -8,9 +8,9 @@ import pytest
 import logging
 from typing import Generator
 
-from src.performance.benchmark import Benchmark, BenchmarkSuite, Timer
-from src.performance.load_generator import LoadGenerator, LoadProfile
-from src.performance.metrics_collector import (
+from performance.benchmark import Benchmark, BenchmarkSuite, Timer
+from performance.load_generator import LoadGenerator, LoadProfile
+from performance.metrics_collector import (
     PerformanceMetrics,
     LatencyHistogram,
     ThroughputTracker,

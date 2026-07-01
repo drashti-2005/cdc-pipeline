@@ -13,7 +13,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.cicd.version import (
+from cicd.version import (
     SemanticVersion,
     VersionBumpType,
     parse_version,
@@ -22,7 +22,7 @@ from src.cicd.version import (
     compare_versions,
     get_version_info,
 )
-from src.cicd.config import (
+from cicd.config import (
     Environment,
     DatabaseConfig,
     KafkaConfig,
@@ -31,7 +31,7 @@ from src.cicd.config import (
     get_environment,
     load_config,
 )
-from src.cicd.deploy import (
+from cicd.deploy import (
     DeploymentStatus,
     DeploymentResult,
     Deployer,
@@ -39,7 +39,7 @@ from src.cicd.deploy import (
     KubernetesDeployer,
     create_deployer,
 )
-from src.cicd.health import (
+from cicd.health import (
     HealthCheckResult,
     HealthCheck,
     TCPHealthCheck,
@@ -48,7 +48,7 @@ from src.cicd.health import (
     DeploymentHealthChecker,
     check_deployment_health,
 )
-from src.cicd.rollback import (
+from cicd.rollback import (
     Backup,
     RollbackManager,
     create_backup,

@@ -127,7 +127,7 @@ class TestQualityAwareProcessing:
         unique_test_id,
     ):
         """Test that valid events pass quality checks."""
-        from src.consumer.event_processor import QualityAwareProcessor
+        from consumer.event_processor import QualityAwareProcessor
         from unittest.mock import MagicMock
         
         # Create processor with mocked router and DLQ
@@ -169,7 +169,7 @@ class TestQualityAwareProcessing:
         unique_test_id,
     ):
         """Test that invalid operations fail quality checks."""
-        from src.consumer.event_processor import QualityAwareProcessor
+        from consumer.event_processor import QualityAwareProcessor
         from unittest.mock import MagicMock
         
         mock_router = MagicMock()
@@ -203,7 +203,7 @@ class TestQualityAwareProcessing:
         unique_test_id,
     ):
         """Test that malformed JSON triggers deserialization error."""
-        from src.consumer.event_processor import QualityAwareProcessor
+        from consumer.event_processor import QualityAwareProcessor
         from unittest.mock import MagicMock
         
         mock_router = MagicMock()
@@ -240,7 +240,7 @@ class TestDLQHandling:
         unique_test_id,
     ):
         """Test that quality failures are sent to DLQ."""
-        from src.consumer.dlq_handler import DLQHandler
+        from consumer.dlq_handler import DLQHandler
         
         # Create DLQ topic
         dlq_topic = f"test.dlq.{unique_test_id}"
@@ -285,7 +285,7 @@ class TestDLQHandling:
         unique_test_id,
     ):
         """Test that sink failures are sent to DLQ."""
-        from src.consumer.dlq_handler import DLQHandler
+        from consumer.dlq_handler import DLQHandler
         
         dlq_topic = f"test.dlq.{unique_test_id}"
         kafka_helper.create_topic(dlq_topic)
@@ -323,7 +323,7 @@ class TestDLQHandling:
         unique_test_id,
     ):
         """Test that DLQ entries preserve original message metadata."""
-        from src.consumer.dlq_handler import DLQHandler
+        from consumer.dlq_handler import DLQHandler
         
         dlq_topic = f"test.dlq.{unique_test_id}"
         kafka_helper.create_topic(dlq_topic)

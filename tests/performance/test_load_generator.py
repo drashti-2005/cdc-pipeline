@@ -6,8 +6,8 @@ Tests for event generation and load profiling.
 
 import time
 import pytest
-from src.schemas.cdc_event import OperationType
-from src.performance.load_generator import (
+from schemas.cdc_event import OperationType
+from performance.load_generator import (
     LoadGenerator,
     LoadProfile,
     EventBatch,

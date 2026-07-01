@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-from src.schemas.cdc_event import (
+from schemas.cdc_event import (
     CDCEvent,
     DLQEvent,
     OperationType,

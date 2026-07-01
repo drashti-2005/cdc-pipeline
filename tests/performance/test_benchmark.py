@@ -6,7 +6,7 @@ Tests for Timer, Benchmark, BenchmarkResult, and BenchmarkSuite.
 
 import time
 import pytest
-from src.performance.benchmark import (
+from performance.benchmark import (
     Timer,
     Benchmark,
     BenchmarkResult,

@@ -8,16 +8,16 @@ import uuid
 import pytest
 from unittest.mock import Mock, patch, MagicMock
 
-from src.consumer.dlq_handler import (
+from consumer.dlq_handler import (
     DLQHandler,
     DLQEntry,
     FailureReason,
 )
-from src.consumer.event_processor import (
+from consumer.event_processor import (
     QualityAwareProcessor,
     ProcessingResult,
 )
-from src.quality import QualityChecker, RequiredFieldRule
+from quality import QualityChecker, RequiredFieldRule
 
 
 class TestFailureReason:

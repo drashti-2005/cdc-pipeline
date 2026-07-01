@@ -6,7 +6,7 @@ Tests for latency histograms, throughput tracking, and resource monitoring.
 
 import time
 import pytest
-from src.performance.metrics_collector import (
+from performance.metrics_collector import (
     LatencyHistogram,
     ThroughputTracker,
     ResourceMonitor,
