@@ -9,12 +9,6 @@ setup(
     version="0.1.0",
     packages=find_packages(where="src"),
     package_dir={"": "src"},
-    install_requires=[
-        "kafka-python",
-        "psycopg2-binary",
-        "boto3",
-        "prometheus-client",
-        "pyyaml",
-        "python-dotenv",
-    ],
+    # Don't specify install_requires - use requirements.txt instead
+    # This avoids conflicts when pip install . is run after pip install -r requirements.txt
 )
