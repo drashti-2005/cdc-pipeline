@@ -10,7 +10,7 @@ This module provides utilities for:
 - Optimization patterns (batching, pooling, circuit breaker)
 """
 
-from src.performance.benchmark import (
+from .benchmark import (
     Benchmark,
     BenchmarkResult,
     BenchmarkSuite,
@@ -19,7 +19,7 @@ from src.performance.benchmark import (
     measure_time,
     timed,
 )
-from src.performance.load_generator import (
+from .load_generator import (
     LoadGenerator,
     LoadProfile,
     EventBatch,
@@ -27,13 +27,13 @@ from src.performance.load_generator import (
     generate_order_event,
     generate_product_event,
 )
-from src.performance.metrics_collector import (
+from .metrics_collector import (
     PerformanceMetrics,
     LatencyHistogram,
     ThroughputTracker,
     ResourceMonitor,
 )
-from src.performance.optimizations import (
+from .optimizations import (
     BatchProcessor,
     ObjectPool,
     CircuitBreaker,

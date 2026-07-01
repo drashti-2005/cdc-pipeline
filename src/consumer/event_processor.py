@@ -38,12 +38,12 @@ import logging
 from dataclasses import dataclass
 from typing import Optional
 
-from src.consumer import config
-from src.consumer.dlq_handler import DLQHandler, FailureReason, get_dlq_handler
-from src.consumer.event_router import EventRouter
-from src.quality import QualityChecker, create_cdc_event_checker
-from src.schemas.cdc_event import CDCEvent
-from src.metrics import (
+from consumer import config
+from consumer.dlq_handler import DLQHandler, FailureReason, get_dlq_handler
+from consumer.event_router import EventRouter
+from quality import QualityChecker, create_cdc_event_checker
+from schemas.cdc_event import CDCEvent
+from metrics import (
     DATA_QUALITY_CHECKS_TOTAL,
     DATA_QUALITY_FAILURES_TOTAL,
     DATA_QUALITY_PASS_RATE,
@@ -347,7 +347,7 @@ def create_processor_with_table_checkers() -> QualityAwareProcessor:
     Returns:
         QualityAwareProcessor with customer and order checkers registered
     """
-    from src.quality import create_customer_checker, create_order_checker
+    from quality import create_customer_checker, create_order_checker
     
     processor = QualityAwareProcessor()
     

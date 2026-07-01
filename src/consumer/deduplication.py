@@ -47,7 +47,7 @@ from collections import OrderedDict
 from threading import Lock
 from typing import Optional
 
-from src.metrics import DEDUP_CACHE_SIZE
+from metrics import DEDUP_CACHE_SIZE
 
 logger = logging.getLogger(__name__)
 

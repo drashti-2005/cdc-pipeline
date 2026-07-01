@@ -24,7 +24,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Dict, List, Optional, Any, Callable
 
-from src.multiregion.config import (
+from multiregion.config import (
     Region,
     RegionConfig,
     MultiRegionConfig,

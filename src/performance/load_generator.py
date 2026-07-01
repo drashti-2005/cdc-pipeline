@@ -18,7 +18,7 @@ from enum import Enum
 from datetime import datetime, timezone
 import uuid
 
-from src.schemas.cdc_event import CDCEvent, OperationType, SourceInfo
+from schemas.cdc_event import CDCEvent, OperationType, SourceInfo
 
 logger = logging.getLogger(__name__)
 

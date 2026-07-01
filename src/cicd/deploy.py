@@ -15,7 +15,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from src.cicd.config import DeploymentConfig, Environment
+from cicd.config import DeploymentConfig, Environment
 
 logger = logging.getLogger(__name__)
 

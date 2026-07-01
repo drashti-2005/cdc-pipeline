@@ -22,8 +22,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 
-from src.schemas.evolution.version import SchemaVersion, VersionedSchema
-from src.schemas.evolution.compatibility import (
+from schemas.evolution.version import SchemaVersion, VersionedSchema
+from schemas.evolution.compatibility import (
     CompatibilityLevel,
     CompatibilityChecker,
     CompatibilityResult,

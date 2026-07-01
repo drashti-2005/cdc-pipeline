@@ -329,7 +329,7 @@ def compare_sizes():
     """
     Demo function showing JSON vs Avro size difference.
     
-    Run with: python -c "from src.schemas.avro_serializer import compare_sizes; compare_sizes()"
+    Run with: python -c "from schemas.avro_serializer import compare_sizes; compare_sizes()"
     """
     import uuid
     

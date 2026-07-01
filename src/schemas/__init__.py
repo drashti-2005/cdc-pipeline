@@ -1,5 +1,5 @@
 # CDC Event Schemas
-from src.schemas.cdc_event import (
+from .cdc_event import (
     CDCEvent,
     DLQEvent,
     OperationType,
@@ -7,7 +7,7 @@ from src.schemas.cdc_event import (
 )
 
 # Local Avro Serialization (no Schema Registry needed)
-from src.schemas.avro_serializer import (
+from .avro_serializer import (
     LocalAvroSerializer,
     get_serializer,
     cdc_event_to_avro,

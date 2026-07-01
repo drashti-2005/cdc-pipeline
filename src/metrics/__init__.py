@@ -4,7 +4,7 @@ CDC Pipeline Metrics Package
 Prometheus metrics for monitoring pipeline health.
 
 Usage:
-    from src.metrics import start_metrics_server, record_producer_event
+    from .metrics import start_metrics_server, record_producer_event
     
     # Start metrics server (once at startup)
     start_metrics_server(port=8000)
@@ -13,7 +13,7 @@ Usage:
     record_producer_event("customers", "INSERT")
 """
 
-from src.metrics.pipeline_metrics import (
+from .pipeline_metrics import (
     # Server
     start_metrics_server,
     

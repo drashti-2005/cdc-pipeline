@@ -8,7 +8,7 @@ Provides observability infrastructure for the CDC pipeline:
 - Dashboards: Visualize system state
 """
 
-from src.monitoring.metrics import (
+from .metrics import (
     MetricsRegistry,
     Counter,
     Gauge,
@@ -18,7 +18,7 @@ from src.monitoring.metrics import (
     get_metrics_registry,
     configure_metrics,
 )
-from src.monitoring.alerting import (
+from .alerting import (
     Alert,
     AlertLevel,
     AlertState,
@@ -29,7 +29,7 @@ from src.monitoring.alerting import (
     WebhookAlertChannel,
     EmailAlertChannel,
 )
-from src.monitoring.health import (
+from .health import (
     HealthStatus,
     HealthCheck,
     HealthResult,
@@ -40,7 +40,7 @@ from src.monitoring.health import (
     create_database_check,
     create_kafka_check,
 )
-from src.monitoring.dashboard import (
+from .dashboard import (
     DashboardPanel,
     Dashboard,
     DashboardManager,

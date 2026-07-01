@@ -31,7 +31,7 @@ from typing import Generator
 import psycopg2
 import psycopg2.extras
 
-from src.producer.config import (
+from producer.config import (
     CDC_POLL_INTERVAL_MS,
     KEEPALIVE_INTERVAL_S,
     MAX_BUFFER_SIZE,
@@ -39,7 +39,7 @@ from src.producer.config import (
     REPLICATION_SLOT,
     get_replication_dsn,
 )
-from src.schemas.cdc_event import CDCEvent, OperationType, SourceInfo
+from schemas.cdc_event import CDCEvent, OperationType, SourceInfo
 
 logger = logging.getLogger(__name__)
 

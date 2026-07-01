@@ -54,10 +54,10 @@ from typing import Optional
 
 from confluent_kafka import Consumer, KafkaError, KafkaException
 
-from src.consumer import config
-from src.consumer.event_router import EventRouter
-from src.schemas.cdc_event import CDCEvent
-from src.metrics import (
+from consumer import config
+from consumer.event_router import EventRouter
+from schemas.cdc_event import CDCEvent
+from metrics import (
     start_metrics_server,
     record_consumer_event,
     CONSUMER_PROCESSING_DURATION,

@@ -8,7 +8,7 @@ Provides security infrastructure for the CDC pipeline:
 - Audit: Log security-relevant events
 """
 
-from src.security.authentication import (
+from .authentication import (
     AuthProvider,
     TokenAuth,
     APIKeyAuth,
@@ -17,14 +17,14 @@ from src.security.authentication import (
     AuthError,
     Credentials,
 )
-from src.security.authorization import (
+from .authorization import (
     Permission,
     Role,
     RBACManager,
     AccessDeniedError,
     check_permission,
 )
-from src.security.encryption import (
+from .encryption import (
     Encryptor,
     AESEncryptor,
     FieldEncryptor,
@@ -32,7 +32,7 @@ from src.security.encryption import (
     hash_password,
     verify_password,
 )
-from src.security.audit import (
+from .audit import (
     AuditLogger,
     AuditEvent,
     AuditLevel,

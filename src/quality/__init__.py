@@ -4,7 +4,7 @@ Data Quality Module
 Validates CDC events to ensure data quality.
 
 Usage:
-    from src.quality import QualityChecker, RequiredFieldRule
+    from .quality import QualityChecker, RequiredFieldRule
     
     checker = QualityChecker()
     checker.add_rule(RequiredFieldRule("id"))
@@ -14,7 +14,7 @@ Usage:
         handle_bad_event(event, report)
 """
 
-from src.quality.data_quality import (
+from .data_quality import (
     # Core classes
     DataQualityRule,
     QualityChecker,

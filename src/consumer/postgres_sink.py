@@ -41,9 +41,9 @@ import psycopg2
 from psycopg2 import sql
 from psycopg2.extras import RealDictCursor
 
-from src.consumer import config
-from src.schemas.cdc_event import CDCEvent, OperationType
-from src.metrics import record_postgres_write, POSTGRES_CONNECTION_ERRORS
+from consumer import config
+from schemas.cdc_event import CDCEvent, OperationType
+from metrics import record_postgres_write, POSTGRES_CONNECTION_ERRORS
 
 logger = logging.getLogger(__name__)
 

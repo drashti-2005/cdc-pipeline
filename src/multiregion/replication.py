@@ -24,7 +24,7 @@ from enum import Enum
 from queue import Queue, Empty
 from typing import Dict, List, Optional, Any, Callable, Set
 
-from src.multiregion.config import (
+from multiregion.config import (
     Region,
     RegionConfig,
     MultiRegionConfig,

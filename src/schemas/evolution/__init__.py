@@ -8,13 +8,13 @@ This module provides utilities for:
 - Schema registry abstraction (local and remote)
 """
 
-from src.schemas.evolution.version import (
+from .evolution.version import (
     SchemaVersion,
     VersionedSchema,
     parse_version,
     compare_versions,
 )
-from src.schemas.evolution.compatibility import (
+from .evolution.compatibility import (
     CompatibilityLevel,
     CompatibilityChecker,
     CompatibilityResult,
@@ -22,12 +22,12 @@ from src.schemas.evolution.compatibility import (
     check_forward_compatibility,
     check_full_compatibility,
 )
-from src.schemas.evolution.registry import (
+from .evolution.registry import (
     SchemaRegistry,
     LocalSchemaRegistry,
     SchemaMetadata,
 )
-from src.schemas.evolution.migration import (
+from .evolution.migration import (
     SchemaMigrator,
     MigrationPlan,
     MigrationStep,

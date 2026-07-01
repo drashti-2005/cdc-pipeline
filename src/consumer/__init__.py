@@ -16,23 +16,23 @@ Usage:
     python -m src.consumer.kafka_consumer
 
 Or programmatically:
-    from src.consumer.kafka_consumer import CDCConsumer
+    from .kafka_consumer import CDCConsumer
     consumer = CDCConsumer()
     consumer.run()
 """
 
-from src.consumer.kafka_consumer import CDCConsumer
-from src.consumer.event_router import EventRouter
-from src.consumer.minio_sink import MinIOSink
-from src.consumer.postgres_sink import PostgresSink
-from src.consumer.deduplication import DeduplicationCache
-from src.consumer.dlq_handler import (
+from .kafka_consumer import CDCConsumer
+from .event_router import EventRouter
+from .minio_sink import MinIOSink
+from .postgres_sink import PostgresSink
+from .deduplication import DeduplicationCache
+from .dlq_handler import (
     DLQHandler,
     DLQEntry,
     FailureReason,
     get_dlq_handler,
 )
-from src.consumer.event_processor import (
+from .event_processor import (
     QualityAwareProcessor,
     ProcessingResult,
     create_processor_with_table_checkers,

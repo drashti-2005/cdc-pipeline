@@ -46,7 +46,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Callable, Optional
 
-from src.metrics import (
+from metrics import (
     DATA_QUALITY_CHECKS_TOTAL,
     DATA_QUALITY_FAILURES_TOTAL,
 )

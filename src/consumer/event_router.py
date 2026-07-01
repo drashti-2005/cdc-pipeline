@@ -42,12 +42,12 @@ from typing import Optional
 
 from confluent_kafka import Producer
 
-from src.consumer import config
-from src.consumer.deduplication import DeduplicationCache
-from src.consumer.minio_sink import MinIOSink
-from src.consumer.postgres_sink import PostgresSink
-from src.schemas.cdc_event import CDCEvent, DLQEvent
-from src.metrics import (
+from consumer import config
+from consumer.deduplication import DeduplicationCache
+from consumer.minio_sink import MinIOSink
+from consumer.postgres_sink import PostgresSink
+from schemas.cdc_event import CDCEvent, DLQEvent
+from metrics import (
     record_event_processed,
     record_event_failed,
     CONSUMER_EVENTS_DEDUPLICATED,

@@ -31,13 +31,13 @@ import time
 
 from confluent_kafka import Producer, KafkaError
 
-from src.producer.config import (
+from producer.config import (
     DLQ_TOPIC,
     KAFKA_BOOTSTRAP_SERVERS,
     get_topic_name,
 )
-from src.producer.wal_reader import WALReader
-from src.schemas.cdc_event import CDCEvent, DLQEvent
+from producer.wal_reader import WALReader
+from schemas.cdc_event import CDCEvent, DLQEvent
 
 # Configure structured logging
 logging.basicConfig(
