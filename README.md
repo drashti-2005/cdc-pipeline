@@ -59,13 +59,100 @@ make simulate  # Generate test traffic
 
 ## 🏗️ Architecture Overview
 
-```
-PostgreSQL (Source) → WAL → Kafka → Python Consumer → MinIO (Archive)
-                                                    → PostgreSQL (Target)
-                                                    → Prometheus (Metrics)
-                                          ↓
-                            Airflow → dbt → Superset (BI)
-                            Grafana (Monitoring)
+```mermaid
+flowchart TB
+    subgraph Sources["📦 Source Layer"]
+        PG_SRC[(PostgreSQL\nSource DB)]
+        WAL[WAL\nLogical Decoding]
+        PG_SRC -->|pgoutput\nplugin| WAL
+    end
+
+    subgraph Streaming["🚀 Streaming Layer"]
+        PROD[CDC Producer\nwal_reader.py]
+        KAFKA[[Apache Kafka\nKRaft Mode]]
+        SR[Schema Registry\nKarapace]
+        AVRO[Avro\nSerializer]
+        WAL --> PROD
+        PROD -->|Avro events| KAFKA
+        PROD <-->|Schema\nvalidation| SR
+        PROD --> AVRO
+    end
+
+    subgraph Processing["⚙️ Processing Layer"]
+        CONS[CDC Consumer\nkafka_consumer.py]
+        ROUTER[Event Router\nevent_router.py]
+        DEDUP[Deduplication\nEngine]
+        DLQ[Dead Letter\nQueue]
+        PROC[Event Processor\nevent_processor.py]
+        KAFKA --> CONS
+        CONS --> DEDUP
+        DEDUP --> ROUTER
+        ROUTER --> PROC
+        ROUTER -->|failed events| DLQ
+    end
+
+    subgraph Sinks["🗄️ Sink Layer"]
+        MINIO[(MinIO\nS3 Bronze Layer)]
+        PG_TGT[(PostgreSQL\nTarget DB)]
+        PROC -->|archive| MINIO
+        PROC -->|replicate| PG_TGT
+    end
+
+    subgraph Analytics["📊 Analytics Layer"]
+        AIRFLOW[Apache Airflow\nOrchestration]
+        DBT[dbt\nTransformations]
+        SILVER[(Silver Layer\nCleaned Data)]
+        GOLD[(Gold Layer\nAggregated)]
+        MINIO --> AIRFLOW
+        PG_TGT --> AIRFLOW
+        AIRFLOW --> DBT
+        DBT --> SILVER
+        SILVER --> GOLD
+    end
+
+    subgraph Quality["✅ Data Quality"]
+        DQ[Quality Framework\ndata_quality.py]
+        RECON[Reconciliation\nreconcile.py]
+        PG_SRC <-->|consistency\ncheck| RECON
+        PG_TGT <-->|consistency\ncheck| RECON
+        PROC --> DQ
+    end
+
+    subgraph Observability["📈 Observability"]
+        PROM[Prometheus\nMetrics]
+        GRAF[Grafana\nDashboards]
+        ALERT[Alertmanager\nAlerting]
+        PROM --> GRAF
+        PROM --> ALERT
+    end
+
+    CONS -->|metrics| PROM
+    PROC -->|metrics| PROM
+    DQ -->|metrics| PROM
+
+    subgraph Security["🔒 Security"]
+        ENC[Encryption\nat Rest & Transit]
+        RBAC[RBAC\nAuthorization]
+        AUDIT[Audit\nLogging]
+    end
+
+    subgraph CICD["🔄 CI/CD"]
+        GHA[GitHub Actions]
+        DOCKER[Docker\nCompose]
+        K8S[Kubernetes\nDeploy]
+        GHA --> DOCKER
+        GHA --> K8S
+    end
+
+    style Sources fill:#e8f5e9,stroke:#388e3c,color:#1b5e20
+    style Streaming fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    style Processing fill:#fff3e0,stroke:#e65100,color:#bf360c
+    style Sinks fill:#fce4ec,stroke:#c62828,color:#b71c1c
+    style Analytics fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    style Quality fill:#e0f7fa,stroke:#00695c,color:#004d40
+    style Observability fill:#fffde7,stroke:#f57f17,color:#e65100
+    style Security fill:#efebe9,stroke:#4e342e,color:#3e2723
+    style CICD fill:#e8eaf6,stroke:#283593,color:#1a237e
 ```
 
 ## 📋 Project Implementation Status
